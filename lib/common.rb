@@ -17,7 +17,7 @@ module ICMP4EM
 
     # Perform a checksum on the message.  This is the sum of all the short
     # words and it folds the high order bits into the low order bits.
-    # (This method was stolen directly from net-ping)
+    # (This method was stolen directly from net-ping - yaki)
     def generate_checksum(msg)
       length    = msg.length
       num_short = length / 2
