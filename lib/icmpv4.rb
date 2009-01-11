@@ -6,7 +6,7 @@ module ICMP4EM
     include HostCommon
 
     attr_accessor :bind_host, :interval, :threshold, :timeout
-    attr_reader :id, :failures_required, :recoveries_required
+    attr_reader :id, :failures_required, :recoveries_required, :seq
 
     @@instances = []
     @@recvsocket = nil
@@ -56,7 +56,7 @@ module ICMP4EM
       raise "EM not running" unless EM.reactor_running?
       init_handler if @@recvsocket.nil?
       seq = ping_send
-      EM.add_timer(@timeout) { self.send(:expire, seq, Timeout.new("Ping timed out")) }
+      EM.add_timer(@timeout) { self.send(:expire, seq, Timeout.new("Ping timed out")) } unless @timeout == 0
     end
 
     # Uses EM.add_periodic_timer to ping the host at @interval.
