@@ -5,7 +5,7 @@ module ICMP4EM
     include Common
     include HostCommon
 
-    attr_accessor :bind_host, :interval, :threshold, :timeout
+    attr_accessor :bind_host, :interval, :threshold, :timeout, :data
     attr_reader :id, :failures_required, :recoveries_required, :seq
 
     @@instances = []
@@ -111,13 +111,14 @@ module ICMP4EM
       end
 
       # Generate msg with checksum
-      msg = [ICMP_ECHO, ICMP_SUBCODE, 0, @id, @seq, @data].pack("C2 n3 A22")
+      msg = [ICMP_ECHO, ICMP_SUBCODE, 0, @id, @seq, @data].pack("C2 n3 A*")
       msg[2..3] = [generate_checksum(msg)].pack('n')
+      # Enqueue
       @waiting << [Time.now, @seq]
       begin
         # Fire it off
         socket.send(msg, 0, @ipv4_sockaddr)
-        # Enqueue
+        # Return sequence number to caller
         @seq
       rescue Exception => err
         expire(@seq, err)

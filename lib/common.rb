@@ -23,7 +23,7 @@ module ICMP4EM
       end
 
       if length % 2 > 0
-        check += msg[length-1, 1].unpack('C') << 8
+        check += msg[length-1, 1].unpack('C').first << 8
       end
 
       check = (check >> 16) + (check & 0xffff)
