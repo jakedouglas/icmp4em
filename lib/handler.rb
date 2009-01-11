@@ -40,6 +40,13 @@ module ICMP4EM
       host = Socket.unpack_sockaddr_in(sender).last
       [host, data]
     end
+    
+    def verify_checksum?(ary)
+      cs = ary[2]
+      ary_copy = ary.dup
+      ary_copy[2] = 0
+      cs == generate_checksum(ary_copy.pack("C2 n3 A22"))
+    end
 
   end
 
