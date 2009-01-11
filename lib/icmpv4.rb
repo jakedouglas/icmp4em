@@ -110,10 +110,8 @@ module ICMP4EM
       end
 
       # Generate msg with checksum
-      checksum = 0
-      msg = [ICMP_ECHO, ICMP_SUBCODE, checksum, @id, @seq, @data].pack("C2 n3 A22")
-      checksum = generate_checksum(msg)
-      msg = [ICMP_ECHO, ICMP_SUBCODE, checksum, @id, @seq, @data].pack("C2 n3 A22")
+      msg = [ICMP_ECHO, ICMP_SUBCODE, 0, @id, @seq, @data].pack("C2 n3 A22")
+      msg[2..3] = [generate_checksum(msg)].pack('n')
       @waiting << [Time.now, @seq]
       begin
         # Fire it off
