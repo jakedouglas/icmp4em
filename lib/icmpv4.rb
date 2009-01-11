@@ -57,6 +57,7 @@ module ICMP4EM
       init_handler if @@recvsocket.nil?
       seq = ping_send
       EM.add_timer(@timeout) { self.send(:expire, seq, Timeout.new("Ping timed out")) } unless @timeout == 0
+      @seq
     end
 
     # Uses EM.add_periodic_timer to ping the host at @interval.
