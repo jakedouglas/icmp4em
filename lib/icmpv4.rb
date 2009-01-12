@@ -31,7 +31,7 @@ module ICMP4EM
       @recoveries_required = options[:recoveries_required] || 5
       @failures_required   = options[:failures_required] || 5
       @up = true
-      @waiting = []
+      @waiting = {}
       set_id
       @seq, @failcount = 0, 0
       @data = "Ping from EventMachine"
@@ -75,9 +75,9 @@ module ICMP4EM
     # Expire a sequence number from the waiting queue.
     # Should only be called by the timer setup in #ping or the rescue Exception in #ping_send.
     def expire(seq, exception = nil)
-      waiting = @waiting.find{|x| x.last == seq}
+      waiting = @waiting[seq]
       if waiting
-        @waiting.delete(waiting)
+        @waiting[seq] = nil
         adjust_failure_count(:down) if @stateful
         expiry(seq, exception)
         check_for_fail_or_recover if @stateful
@@ -85,16 +85,14 @@ module ICMP4EM
     end
 
     # Should only be called by the Handler. Passes the receive time and sequence number.
-    def receive(ary)
-      time = ary.shift
-      seq = ary.shift
-      waiting = @waiting.find{|x| x.last == seq}
+    def receive(seq, time)
+      waiting = @waiting[seq]
       if waiting
-        latency = (time - waiting.first) * 1000
+        latency = (time - waiting) * 1000
         adjust_failure_count(:up) if @stateful
         success(seq, latency)
         check_for_fail_or_recover if @stateful
-        @waiting.delete(waiting)
+        @waiting[seq] = nil
       end
     end
 
@@ -116,8 +114,10 @@ module ICMP4EM
       # Generate msg with checksum
       msg = [ICMP_ECHO, ICMP_SUBCODE, 0, @id, @seq, @data].pack("C2 n3 A*")
       msg[2..3] = [generate_checksum(msg)].pack('n')
+      
       # Enqueue
-      @waiting << [Time.now, @seq]
+      @waiting[seq] = Time.now
+      
       begin
         # Fire it off
         socket.send(msg, 0, @ipv4_sockaddr)

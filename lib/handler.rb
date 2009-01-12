@@ -30,7 +30,7 @@ module ICMP4EM
       # Find which object it is supposed to go to
       recipient = ICMPv4.instances[msg[3]]
       # Send time and seq number to recipient object
-      recipient.send(:receive, [time, msg[4]]) unless recipient.nil?
+      recipient.send(:receive, msg[4], time) unless recipient.nil?
     end
 
     def read_socket(socket)
