@@ -4,16 +4,19 @@ module ICMP4EM
 
     include Common
     include HostCommon
-
+    
+    @instances = []
+    @recvsocket = nil
+    
+    class << self
+      
+      attr_reader :instances
+      attr_accessor :recvsocket
+      
+    end
+    
     attr_accessor :bind_host, :interval, :threshold, :timeout, :data
     attr_reader :id, :failures_required, :recoveries_required, :seq
-
-    @@instances = []
-    @@recvsocket = nil
-
-    def self.instances
-      @@instances
-    end
 
     # Create a new ICMP object (host). Must be passed either IP address or hostname, and 
     # optionally the interval at which it should be pinged, and timeout for the pings, in seconds.
@@ -48,13 +51,13 @@ module ICMP4EM
     # the object from the class variable array that is searched for recipients when
     # an ICMP echo comes in. Better way to do this whole thing?...
     def destroy
-      @@instances.delete(self)
+      self.class.instances.delete(self)
     end
 
     # Send the echo request to @host and add sequence number to the waiting queue.
     def ping
       raise "EM not running" unless EM.reactor_running?
-      init_handler if @@recvsocket.nil?
+      init_handler if self.class.recvsocket.nil?
       seq = ping_send
       EM.add_timer(@timeout) { self.send(:expire, seq, Timeout.new("Ping timed out")) } unless @timeout == 0
       @seq
@@ -129,16 +132,16 @@ module ICMP4EM
 
     # Initialize the receiving socket and handler for incoming ICMP packets.
     def init_handler
-      @@recvsocket = Socket.new(
+      self.class.recvsocket = Socket.new(
       Socket::PF_INET,
       Socket::SOCK_RAW,
       Socket::IPPROTO_ICMP
       )
       if @bind_host
         saddr = Socket.pack_sockaddr_in(0, @bind_host)
-        @@recvsocket.bind(saddr)
+        self.class.recvsocket.bind(saddr)
       end
-      EM.attach @@recvsocket, Handler, @@recvsocket
+      EM.attach self.class.recvsocket, Handler, self.class.recvsocket
     end
 
     # Sets the instance id to a unique 16 bit integer so it can fit inside relevent the ICMP field.
@@ -146,9 +149,9 @@ module ICMP4EM
     def set_id
       while @id.nil?
         id = rand(65535)
-        unless @@instances.find{|x| x.id == id}
+        unless self.class.instances.find{|x| x.id == id}
           @id = id
-          @@instances << self
+          self.class.instances << self
         end
       end
     end
