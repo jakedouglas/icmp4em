@@ -5,7 +5,7 @@ module ICMP4EM
     include Common
     include HostCommon
     
-    @instances = []
+    @instances = {}
     @recvsocket = nil
     
     class << self
@@ -51,7 +51,7 @@ module ICMP4EM
     # the object from the class variable array that is searched for recipients when
     # an ICMP echo comes in. Better way to do this whole thing?...
     def destroy
-      self.class.instances.delete(self)
+      self.class.instances[@id] = nil
     end
 
     # Send the echo request to @host and add sequence number to the waiting queue.
@@ -149,12 +149,13 @@ module ICMP4EM
     def set_id
       while @id.nil?
         id = rand(65535)
-        unless self.class.instances.find{|x| x.id == id}
+        unless self.class.instances[id]
           @id = id
-          self.class.instances << self
+          self.class.instances[@id] = self
         end
       end
     end
 
   end
+  
 end

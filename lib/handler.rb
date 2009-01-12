@@ -28,7 +28,7 @@ module ICMP4EM
       # Verify the packet type is echo reply and verify integrity against the checksum it provided
       return unless msg.first == ICMP_ECHOREPLY && verify_checksum?(msg)
       # Find which object it is supposed to go to
-      recipient = ICMPv4.instances.find{|x| x.id == msg[3]}
+      recipient = ICMPv4.instances[msg[3]]
       # Send time and seq number to recipient object
       recipient.send(:receive, [time, msg[4]]) unless recipient.nil?
     end
