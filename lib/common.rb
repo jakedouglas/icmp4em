@@ -59,6 +59,16 @@ module ICMP4EM
       @expiry
     end
 
+    # Set the number of consecutive 'failure' pings required to switch host state to 'down' and trigger failure callback, assuming the host is up.
+    def failures_required=(failures)
+      @failures_required = failures
+    end
+    
+    # Set the number of consecutive 'recovery' pings required to switch host state to 'up' and trigger recovery callback, assuming the host is down.
+    def recoveries_required=(recoveries)
+      @recoveries_required = recoveries
+    end
+    
     private
 
     def success(seq, latency)      

@@ -37,16 +37,6 @@ module ICMP4EM
       @data = "Ping from EventMachine"
     end
     
-    # Set the number of consecutive 'failure' pings required to switch host state to 'down' and trigger failure callback, assuming the host is up.
-    def failures_required=(failures)
-      @failures_required = failures
-    end
-    
-    # Set the number of consecutive 'recovery' pings required to switch host state to 'up' and trigger recovery callback, assuming the host is down.
-    def recoveries_required=(recoveries)
-      @recoveries_required = recoveries
-    end
-
     # This must be called when the object will no longer be used, to remove 
     # the object from the class variable array that is searched for recipients when
     # an ICMP echo comes in. Better way to do this whole thing?...
