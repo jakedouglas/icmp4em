@@ -11,6 +11,14 @@ Should be useful in many situations. ICMPv6 is to be added soon.
 
 This must be run as effective root user to use the ICMP sockets.
 
+Installation:
+
+git clone git://github.com/yakischloba/icmp4em.git
+cd icmp4em
+gem build icmp4em.gemspec
+sudo gem install icmp4em-<version>.gem
+
+
 Simple example (see the examples/ directory for the cooler stuff):
 ============================================================================
 require 'rubygems'
