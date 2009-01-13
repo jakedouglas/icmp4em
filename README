@@ -1,20 +1,26 @@
-ICMP4EM - ping using EventMachine
+icmp4em - ICMP ping using EventMachine
 
 http://www.github.com/yakischloba/icmp4em
 
-Asynchronous implementation of ICMP echo/response with EventMachine. Can be used to ping many hosts at once,
-with callbacks for success, timeout, and host failure/recovery based on a threshold number. This must be run 
-as effective root user to use the ICMP sockets.
+Asynchronous implementation of ICMP ping using EventMachine. Can be used to ping many hosts 
+at once in a non-blocking fashion, with callbacks for success, timeout, and host failure/recovery 
+based on specified threshold numbers. It was developed as a component for the purpose of monitoring 
+multiple WAN connections on a Linux gateway host, and altering the routing table accordingly, to 
+provide optimal routing and failover in a situation where only consumer-grade broadband is available.
+Should be useful in many situations. ICMPv6 is to be added soon.
+
+This must be run as effective root user to use the ICMP sockets.
 
 Simple example (see the examples/ directory for the cooler stuff):
 ============================================================================
-require 'init'
+require 'rubygems'
+require 'icmp4em'
 
 Signal.trap("INT") { EventMachine::stop_event_loop }
 
 host = ICMP4EM::ICMPv4.new("127.0.0.1")
 host.on_success {|host, seq, latency| puts "Got echo sequence number #{seq} from host #{host}. It took #{latency}ms." }
-host.on_expire {|host, seq, exception| puts "I shouldn't fail on loopback interface, but in case I did here is the reason: #{exception.to_s}"}
+host.on_expire {|host, seq, exception| puts "I shouldn't fail on loopback interface, but in case I did: #{exception.to_s}"}
 
 EM.run { host.schedule }
 =>
@@ -32,9 +38,10 @@ jakecdouglas@gmail.com
 yakischloba on Freenode
 
 
-Thanks to imperator and the others that worked on the net-ping library. I used the packet construction
-and checksum code from that implementation. I will include the pertinent information from their README
-at the end of this document so that nothing is missed.
+Thanks to the #eventmachine guys for providing a great tool and always being such patient teachers.
+
+Thanks to imperator and the others that worked on the net-ping library. I used the packet construction and checksum
+code from that implementation. Here is the pertinent information from their README, so that nothing is missed:
 
 Acknowledgements from "net-ping-1.2.2/doc/ping.txt": 
 

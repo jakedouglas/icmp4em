@@ -1,3 +1,6 @@
+require 'rubygems'
+require 'icmp4em'
+
 # This is an example of non-stateful usage. Only the callbacks provided in on_success and on_expire are used,
 # and the object does not keep track of up/down or execute callbacks on_failure/on_recovery.
 # The data string can be set to anything, as long as the total packet size is less than MTU of the network.

@@ -56,7 +56,6 @@ module ICMP4EM
     # Uses EM.add_periodic_timer to ping the host at @interval.
     def schedule
       raise "EM not running" unless EM.reactor_running?
-      (raise "Specified stateful usage but missing recoveries_required and/or failures_required" unless !@recoveries_required.nil? && !@failures_required.nil?) if @stateful
       EM.add_periodic_timer(@interval) { self.ping }
     end
 

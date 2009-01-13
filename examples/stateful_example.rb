@@ -1,10 +1,13 @@
+require 'rubygems'
+require 'icmp4em'
+
 # This example shows stateful usage, which tracks up/down state of the host based on consecutive number
 # of successful or failing pings specified in failures_required and recoveries_required. Hosts start in
 # 'up' state.
 
 pings = []
-pings << ICMP4EM::ICMPv4.new("google.com", :stateful => true, :recoveries_required => 5, :failures_required => 5)
-pings << ICMP4EM::ICMPv4.new("10.1.0.175", :stateful => true, :recoveries_required => 5, :failures_required => 5) # host that will not respond.
+pings << ICMP4EM::ICMPv4.new("google.com", :stateful => true)
+pings << ICMP4EM::ICMPv4.new("10.1.0.175", :stateful => true) # host that will not respond.
 
 Signal.trap("INT") { EventMachine::stop_event_loop }
 

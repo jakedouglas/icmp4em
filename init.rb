@@ -1,6 +1,0 @@
-require 'rubygems'
-require 'eventmachine'
-require 'socket'
-require 'lib/common'
-require 'lib/handler'
-require 'lib/icmpv4'
