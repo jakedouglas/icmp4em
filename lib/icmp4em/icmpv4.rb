@@ -89,11 +89,7 @@ module ICMP4EM
     def ping_send
       @seq = (@seq + 1) % 65536
 
-      socket = Socket.new(
-      Socket::PF_INET,
-      Socket::SOCK_RAW,
-      Socket::IPPROTO_ICMP
-      )
+      socket = self.class.recvsocket
 
       if @bind_host
         saddr = Socket.pack_sockaddr_in(0, @bind_host)
@@ -104,18 +100,18 @@ module ICMP4EM
       msg = [ICMP_ECHO, ICMP_SUBCODE, 0, @id, @seq, @data].pack("C2 n3 A*")
       msg[2..3] = [generate_checksum(msg)].pack('n')
       
-      # Enqueue
+      # Enqueue so we can expire properly if there is an exception raised during #send
       @waiting[seq] = Time.now
       
       begin
         # Fire it off
         socket.send(msg, 0, @ipv4_sockaddr)
+        # Re-enqueue AFTER sendto() returns. This ensures we aren't adding latency if the socket blocks.
+        @waiting[seq] = Time.now
         # Return sequence number to caller
         @seq
       rescue Exception => err
         expire(@seq, err)
-      ensure
-        socket.close if socket
       end
     end
 
