@@ -42,11 +42,11 @@ Got echo sequence number 5 from host 127.0.0.1. It took 0.217ms.
 ^C
 ============================================================================
 
-One issue may run into is that when using this with a lot of hosts, or using EventMachine for other things, extra apparent
-latency will be added. This is simply due to other operations blocking the receipt of the ICMP response. For when accurate
-latency measurement is important, and you can afford to block the reactor, I have added a blocking receive mode. To use this
-simply pass :block => true to the constructor. This will wait for the response for the duration of the timeout before passing
-control back to EventMachine.
+One issue may run into is that when using this with a lot of hosts, or using EventMachine for other things, 
+extra apparent latency will be added. This is simply due to other operations blocking the receipt of the ICMP 
+response. For when accurate latency measurement is important, and you can afford to block the reactor, I have 
+added a blocking receive mode. To use this simply pass :block => true to the constructor. This will wait for 
+the response for the duration of the timeout before passing control back to EventMachine.
 
 
 jakecdouglas@gmail.com
