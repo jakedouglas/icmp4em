@@ -91,7 +91,6 @@ module ICMP4EM
           @expiry.call(@host, seq, reason)
         end
       end
-
     end
 
     # Executes specified failure callback, passing the host to the block.

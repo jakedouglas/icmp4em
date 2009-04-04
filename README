@@ -3,11 +3,13 @@ icmp4em - ICMP ping using EventMachine
 http://www.github.com/yakischloba/icmp4em
 
 Asynchronous implementation of ICMP ping using EventMachine. Can be used to ping many hosts 
-at once in a non-blocking fashion, with callbacks for success, timeout, and host failure/recovery 
+at once in a non-blocking (or blocking) fashion, with callbacks for success, timeout, and host failure/recovery 
 based on specified threshold numbers. It was developed as a component for the purpose of monitoring 
 multiple WAN connections on a Linux gateway host, and altering the routing table accordingly, to 
 provide optimal routing and failover in a situation where only consumer-grade broadband is available.
-Should be useful in many situations. ICMPv6 is to be added soon.
+Should be useful in many situations. Still planning on adding ICMPv6 sometime..
+
+Should work fine with Ruby 1.9.1.
 
 This must be run as effective root user to use the ICMP sockets.
 
@@ -40,7 +42,12 @@ Got echo sequence number 5 from host 127.0.0.1. It took 0.217ms.
 ^C
 ============================================================================
 
-Please let me know what is wrong with it!
+One issue may run into is that when using this with a lot of hosts, or using EventMachine for other things, extra apparent
+latency will be added. This is simply due to other operations blocking the receipt of the ICMP response. For when accurate
+latency measurement is important, and you can afford to block the reactor, I have added a blocking receive mode. To use this
+simply pass :block => true to the constructor. This will wait for the response for the duration of the timeout before passing
+control back to EventMachine.
+
 
 jakecdouglas@gmail.com
 yakischloba on Freenode
@@ -48,31 +55,6 @@ yakischloba on Freenode
 
 Thanks to the #eventmachine guys for providing a great tool and always being such patient teachers.
 
+
 Thanks to imperator and the others that worked on the net-ping library. I used the packet construction and checksum
-code from that implementation. Here is the pertinent information from their README, so that nothing is missed:
-
-Acknowledgements from "net-ping-1.2.2/doc/ping.txt": 
-
-= Acknowledgements
-   The Ping::ICMP#ping method is based largely on the identical method from
-   the Net::Ping Perl module by Rob Brown. Much of the code was ported by
-   Jos Backus on ruby-talk.
-
-= Future Plans
-   Add support for syn pings.
-
-= License
-   Ruby's
-
-= Copyright
-   (C) 2003-2008 Daniel J. Berger, All Rights Reserved
-
-= Warranty
-   This package is provided "as is" and without any express or
-   implied warranties, including, without limitation, the implied
-   warranties of merchantability and fitness for a particular purpose.
-
-= Author
-   Daniel J. Berger
-   djberg96 at gmail dot com
-   imperator on IRC (irc.freenode.net)
+code from that implementation. See their README for detailed acknowledgements.

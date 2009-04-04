@@ -11,15 +11,30 @@ module ICMP4EM
     class << self
       
       attr_reader :instances
-      attr_accessor :recvsocket
+      attr_accessor :recvsocket, :handler
       
     end
     
-    attr_accessor :bind_host, :interval, :threshold, :timeout, :data
+    attr_accessor :bind_host, :interval, :threshold, :timeout, :data, :block
     attr_reader :id, :failures_required, :recoveries_required, :seq
 
-    # Create a new ICMP object (host). Must be passed either IP address or hostname, and 
-    # optionally the interval at which it should be pinged, and timeout for the pings, in seconds.
+    # Create a new ICMP object (host). This takes a host and an optional hash of options for modifying the behavior. They are:
+    # * :bind_host
+    # Bind the socket to this address. The operating system will figure this out on it's own unless you need to set it for a special situation.
+    # * :timeout
+    # Timeout, in seconds, before the ping is considered expired and the appropriate callbacks are executed. This should be a numeric class.
+    # * :block
+    # True or false, default is false. True enables a blocking receive mode, for when accurate latency measurement is important. Due to the nature
+    # of event loop architecture, a noticable delay in latency can be added when other things are going on in the reactor.
+    # * :interval
+    # Interval, in seconds, for how often the ping should be sent. Should be a numeric class.
+    # * :stateful
+    # True or false, default is false. Indicates whether or not this ping object should keep track of it's successes and failures and execute
+    # the on_failure/on_recovery callbacks when the specified limits are hit.
+    # * :failures_required
+    # Indicates how many consequtive failures are required to switch to the 'failed' state and execute the on_failure callback. Applies only when :stateful => true
+    # * :recoveries_required
+    # Indicates how many consequtive successes are required to switch to the 'recovered' state and execute the on_recovery callback. Applies only when :stateful => true
     def initialize(host, options = {})
       raise 'requires root privileges' if Process.euid > 0
       @host = host
@@ -28,6 +43,7 @@ module ICMP4EM
       @timeout    =   options[:timeout] || 1
       @stateful   =   options[:stateful] || false
       @bind_host  =   options[:bind_host] || nil
+      @block      =   options[:block] || false
       @recoveries_required = options[:recoveries_required] || 5
       @failures_required   = options[:failures_required] || 5
       @up = true
@@ -38,9 +54,10 @@ module ICMP4EM
     end
     
     # This must be called when the object will no longer be used, to remove 
-    # the object from the class variable array that is searched for recipients when
-    # an ICMP echo comes in. Better way to do this whole thing?...
-    def destroy
+    # the object from the class variable hash that is searched for recipients when
+    # an ICMP echo comes in. Also cancels the periodic timer. Better way to do this whole thing?...
+    def stop
+      @ptimer.cancel if @ptimer
       self.class.instances[@id] = nil
     end
 
@@ -48,15 +65,19 @@ module ICMP4EM
     def ping
       raise "EM not running" unless EM.reactor_running?
       init_handler if self.class.recvsocket.nil?
-      seq = ping_send
-      EM.add_timer(@timeout) { self.send(:expire, seq, Timeout.new("Ping timed out")) } unless @timeout == 0
+      @seq = ping_send
+      if @block
+        blocking_receive
+      else
+        EM.add_timer(@timeout) { self.send(:expire, @seq, Timeout.new("Ping timed out")) } unless @timeout == 0
+      end
       @seq
     end
 
-    # Uses EM.add_periodic_timer to ping the host at @interval.
+    # Uses a periodic timer to ping the host at @interval.
     def schedule
       raise "EM not running" unless EM.reactor_running?
-      EM.add_periodic_timer(@interval) { self.ping }
+      @ptimer = EM::PeriodicTimer.new(@interval) { self.ping }
     end
 
     private
@@ -87,17 +108,12 @@ module ICMP4EM
 
     # Construct and send the ICMP echo request packet.
     def ping_send
-      @seq = (@seq + 1) % 65536
+      seq = (@seq + 1) % 65536
 
       socket = self.class.recvsocket
 
-      if @bind_host
-        saddr = Socket.pack_sockaddr_in(0, @bind_host)
-        socket.bind(saddr)
-      end
-
       # Generate msg with checksum
-      msg = [ICMP_ECHO, ICMP_SUBCODE, 0, @id, @seq, @data].pack("C2 n3 A*")
+      msg = [ICMP_ECHO, ICMP_SUBCODE, 0, @id, seq, @data].pack("C2 n3 A*")
       msg[2..3] = [generate_checksum(msg)].pack('n')
       
       # Enqueue so we can expire properly if there is an exception raised during #send
@@ -109,9 +125,10 @@ module ICMP4EM
         # Re-enqueue AFTER sendto() returns. This ensures we aren't adding latency if the socket blocks.
         @waiting[seq] = Time.now
         # Return sequence number to caller
-        @seq
+        seq
       rescue Exception => err
-        expire(@seq, err)
+        expire(seq, err)
+        seq
       end
     end
 
@@ -126,7 +143,7 @@ module ICMP4EM
         saddr = Socket.pack_sockaddr_in(0, @bind_host)
         self.class.recvsocket.bind(saddr)
       end
-      EM.attach self.class.recvsocket, Handler, self.class.recvsocket
+      self.class.handler = EM.attach self.class.recvsocket, Handler, self.class.recvsocket
     end
 
     # Sets the instance id to a unique 16 bit integer so it can fit inside relevent the ICMP field.
@@ -138,6 +155,16 @@ module ICMP4EM
           @id = id
           self.class.instances[@id] = self
         end
+      end
+    end
+    
+    def blocking_receive
+      r = select([self.class.recvsocket], nil, nil, @timeout)
+      
+      if r and r.first.include?(self.class.recvsocket)
+        self.class.handler.notify_readable
+      else
+        expire(@seq, Timeout.new("Ping timed out"))
       end
     end
 

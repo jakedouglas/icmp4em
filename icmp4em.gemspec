@@ -1,11 +1,11 @@
 Gem::Specification.new do |s|
   s.name = "icmp4em"
-  s.version = "0.0.1"
-  s.date = "2009-01-12"
+  s.version = "0.0.2"
+  s.date = "2009-04-3"
   s.authors = ["Jake Douglas"]
   s.email = "jakecdouglas@gmail.com"
   s.rubyforge_project = "icmp4em"
-  s.has_rdoc = false
+  s.has_rdoc = true
   s.summary = "Asynchronous implementation of ICMP ping using EventMachine"
   s.homepage = "http://www.github.com/yakischloba/icmp4em"
   s.description = "Asynchronous implementation of ICMP ping using EventMachine. Can be used to ping many hosts 
